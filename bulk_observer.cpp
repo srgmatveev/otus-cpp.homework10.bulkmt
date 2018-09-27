@@ -8,14 +8,33 @@
 
 void ToConsolePrint::update(BulkStorage &source, std::size_t id)
 {
-    std::unique_lock<std::mutex> lock_console(console_mutex);
-    printOstream(_out, source, id);
+    std::lock_guard<std::mutex> lock{console_mutex};
+    data_queue.emplace(std::pair{source.get_timestamp(id), source.get_commands(id)});
+    cv_queue.notify_one();
 }
 
-
+void ToConsolePrint::printOut()
+{
+    while (!finished)
+    {
+        std::unique_lock<std::mutex> lck{console_mutex};
+        while (data_queue.empty() && !finished)
+            cv_queue.wait(lck);
+        if (!data_queue.empty())
+        {
+            auto cmd_pair = data_queue.front();
+            data_queue.pop();
+            printOstream1(_out, cmd_pair.second);
+        }
+        lck.unlock();
+    }
+    std::cout << "Consumer - finished!\n";
+}
 void ToFilePrint::update(BulkStorage &source, std::size_t id)
 {
-    std::unique_lock<std::mutex> lock_fs(file_mutex);
+    std::lock_guard<std::mutex> lock_fs(file_mutex);
+    data_queue.emplace(std::pair{source.get_timestamp(id), source.get_commands(id)});
+    cv_queue.notify_one();
     std::ostringstream oss;
     oss << "bulk";
     oss << source.get_timestamp(id);
@@ -27,18 +46,16 @@ void ToFilePrint::update(BulkStorage &source, std::size_t id)
     try
     {
         ofs.open(fName, std::ofstream::out | std::ofstream::trunc);
-        lock_fs.unlock();
+        //lock_fs.unlock();
         printOstream(ofs, source, id);
         ofs.close();
     }
     catch (std::ofstream::failure e)
     {
-        lock_fs.unlock();
+        //lock_fs.unlock();
         std::cerr << "Exception opening/reading/closing file: " << fName << std::endl;
     }
 }
-
-
 
 void Observer::subscribe_on_observable(const std::weak_ptr<Observable> &observable)
 {

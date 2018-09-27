@@ -28,8 +28,10 @@ int main(int argc, char const *argv[])
         auto ptrBulkRead = BulkReadCmd::create(chunk_size);
         auto ptrToConsolePrint = ToConsolePrint::create(std::cout, ptrBulkRead);
         auto ptrToFilePrint = ToFilePrint::create(ptrBulkRead, file_threads_count);
-
+       
         ptrBulkRead->process(std::cin);
+        std::cout<<"programm finished\n";
+       
     }
     catch (std::exception &e)
     {

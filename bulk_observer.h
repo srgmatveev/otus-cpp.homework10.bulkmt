@@ -9,6 +9,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <queue>
+#include <utility>
 #include <thread>
 #include "bulk.h"
 
@@ -37,6 +38,18 @@ protected:
       out << std::endl;
     }
   }
+
+  virtual void printOstream1(std::ostream &out, std::vector<std::string> &vecStr)
+  {
+
+    if (!vecStr.empty())
+    {
+      out << "bulk: ";
+      for (const auto &cmd : vecStr)
+        out << cmd << (&cmd != &vecStr.back() ? ", " : "");
+      out << "\n";
+    }
+  }
 };
 
 class ToConsolePrint : public Observer
@@ -44,16 +57,18 @@ class ToConsolePrint : public Observer
 private:
   std::condition_variable cv_queue;
   std::mutex console_mutex;
-  std::atomic<bool> is_run;
-  std::queue<std::vector<std::string>> data_queue;
+  std::atomic<bool> finished{false};
+  std::queue<std::pair<std::size_t, std::vector<std::string>>> data_queue;
   std::vector<std::thread> console_threads;
   std::ostream &_out;
+
 public:
-  ToConsolePrint(std::ostream &out, std::size_t threads_count = 1) : Observer(), _out{out} {start(threads_count);}
+  ToConsolePrint(std::ostream &out, std::size_t threads_count = 1) : Observer(), _out{out},
+                                                                     finished{false} { start(threads_count); }
   void update(BulkStorage &, std::size_t) override;
   static std::shared_ptr<ToConsolePrint> create(std::ostream &out, const std::weak_ptr<Observable> &_obs, std::size_t threads_count = 1)
   {
-    std::shared_ptr _tmpToConsolePrint = std::make_shared<ToConsolePrint>(out,threads_count);
+    std::shared_ptr _tmpToConsolePrint = std::make_shared<ToConsolePrint>(out, threads_count);
     auto tmpObservable = _obs.lock();
     if (tmpObservable)
     {
@@ -75,24 +90,30 @@ public:
       console_threads.emplace_back(std::thread(&ToConsolePrint::printOut, this));
 
 #ifdef DEBUG
-    std::cout << "Console_log thread created" << console_threads.size() << std::endl;
+    std::cout << "Console_log thread created" << console_threads.size() << "\n";
 #endif
   }
 
   void stop()
   {
+    finished = true;
+    cv_queue.notify_all();
+    if (console_threads.empty())
+    {
+      return;
+    }
     for (auto &thread : console_threads)
       if (thread.joinable())
         thread.join();
+
 #ifdef DEBUG
-    std::cout << "Console_log threads stopped" << console_threads.size() << std::endl;
+    std::cout << "Console_log threads stopped\n";
 #endif
-    console_threads.clear();
+    //console_threads.clear();
   }
-  void printOut()
-  {
-  }
- virtual ~ToConsolePrint()
+  void printOut();
+
+    virtual ~ToConsolePrint()
   {
     stop();
   }
@@ -103,8 +124,8 @@ class ToFilePrint : public Observer
 private:
   std::condition_variable cv_queue;
   std::mutex file_mutex;
-  std::atomic<bool> is_run;
-  std::queue<std::vector<std::string>> data_queue;
+  std::atomic<bool> finished;
+  std::queue<std::pair<std::size_t, std::vector<std::string>>> data_queue;
   std::vector<std::thread> file_threads;
 
 public:
