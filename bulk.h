@@ -44,7 +44,7 @@ protected:
     {
       if (auto ptr = obs.lock())
       {
-        ptr->printOut(source, id);
+        ptr->update(source, id);
         ptr.reset();
       }
     }

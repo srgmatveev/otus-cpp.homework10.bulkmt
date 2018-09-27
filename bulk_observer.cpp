@@ -6,14 +6,14 @@
 #include "bulk.h"
 #include "bulk_observer.h"
 
-void ToConsolePrint::printOut(BulkStorage &source, std::size_t id)
+void ToConsolePrint::update(BulkStorage &source, std::size_t id)
 {
     std::unique_lock<std::mutex> lock_console(console_mutex);
     printOstream(_out, source, id);
 }
 
 
-void ToFilePrint::printOut(BulkStorage &source, std::size_t id)
+void ToFilePrint::update(BulkStorage &source, std::size_t id)
 {
     std::unique_lock<std::mutex> lock_fs(file_mutex);
     std::ostringstream oss;

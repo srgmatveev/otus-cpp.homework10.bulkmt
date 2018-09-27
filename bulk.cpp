@@ -19,7 +19,7 @@ void BulkReadCmd::process(std::istream &in)
 
 void BulkReadCmd::push()
 {
-    std::size_t tmp_time = std::chrono::duration_cast<std::chrono::seconds>(
+    std::size_t tmp_time = std::chrono::duration_cast<std::chrono::microseconds>(
                                std::chrono::system_clock::now().time_since_epoch())
                                .count();
     _bulkStorage->set_timestamp(_numb_of_current_chunk, tmp_time);
