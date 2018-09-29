@@ -5,55 +5,73 @@
 #include "bulk_storage.h"
 #include "bulk.h"
 #include "bulk_observer.h"
+#include "metrics.h"
 
 void ToConsolePrint::update(BulkStorage &source, std::size_t id)
 {
-    std::lock_guard<std::mutex> lock{console_mutex};
+    std::unique_lock<std::mutex> lock{console_mutex};
     data_queue.emplace(std::pair{source.get_timestamp(id), source.get_commands(id)});
     cv_queue.notify_one();
 }
 
 void ToConsolePrint::printOut()
 {
-    while (!finished)
+    while (!finished || !data_queue.empty())
     {
-        std::unique_lock<std::mutex> lck{console_mutex};
+        std::unique_lock<std::mutex> locker{console_mutex};
+
         while (data_queue.empty() && !finished)
-            cv_queue.wait(lck);
+            cv_queue.wait(locker);
         if (!data_queue.empty())
         {
             auto cmd_pair = data_queue.front();
             data_queue.pop();
-            printOstream1(_out, cmd_pair.second);
+            MetricsCount::Instance().blocksIncr(std::this_thread::get_id());
+            MetricsCount::Instance().cmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
+            printOstream(_out, cmd_pair.second);
         }
-        lck.unlock();
     }
-    std::cout << "Consumer - finished!\n";
 }
 void ToFilePrint::update(BulkStorage &source, std::size_t id)
 {
     std::lock_guard<std::mutex> lock_fs(file_mutex);
     data_queue.emplace(std::pair{source.get_timestamp(id), source.get_commands(id)});
     cv_queue.notify_one();
-    std::ostringstream oss;
-    oss << "bulk";
-    oss << source.get_timestamp(id);
-    oss << ".log";
-    std::string fName = oss.str();
+}
 
-    std::ofstream ofs;
-    ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    try
+void ToFilePrint::printOut()
+{
+    while (!finished || !data_queue.empty())
     {
-        ofs.open(fName, std::ofstream::out | std::ofstream::trunc);
-        //lock_fs.unlock();
-        printOstream(ofs, source, id);
-        ofs.close();
-    }
-    catch (std::ofstream::failure e)
-    {
-        //lock_fs.unlock();
-        std::cerr << "Exception opening/reading/closing file: " << fName << std::endl;
+        std::unique_lock<std::mutex> lock_fs{file_mutex};
+        while (data_queue.empty() && !finished)
+            cv_queue.wait(lock_fs);
+        if (!data_queue.empty())
+        {
+            auto cmd_pair = data_queue.front();
+            data_queue.pop();
+            std::ostringstream oss;
+            oss << "bulk";
+            oss << cmd_pair.first;
+            oss << ".log";
+            std::string fName = oss.str();
+            std::ofstream ofs;
+            ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+            try
+            {
+                ofs.open(fName, std::ofstream::out | std::ofstream::trunc);
+                lock_fs.unlock();
+                MetricsCount::Instance().blocksIncr(std::this_thread::get_id());
+                MetricsCount::Instance().cmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
+                printOstream(ofs, cmd_pair.second);
+                ofs.close();
+            }
+            catch (std::ofstream::failure e)
+            {
+                lock_fs.unlock();
+                std::cerr << "Exception opening/reading/closing file: " << fName << std::endl;
+            }
+        }
     }
 }
 

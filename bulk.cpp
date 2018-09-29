@@ -4,13 +4,14 @@
 #include <fstream>
 #include "bulk.h"
 #include "utils.h"
-
+#include "metrics.h"
 
 void BulkReadCmd::process(std::istream &in)
 {
     std::string tmp_str;
     while (std::getline(in, tmp_str))
     {
+       MetricsCount::Instance().stringsIncr(std::this_thread::get_id());
         this->append(tmp_str);
     }
     if (!open_braces_count && _current_numb_of_cell)

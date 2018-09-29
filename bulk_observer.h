@@ -11,9 +11,10 @@
 #include <queue>
 #include <utility>
 #include <thread>
+#include "metrics.h"
 #include "bulk.h"
 
-#define DEBUG
+//#define DEBUG
 
 class Observable;
 class Observer : public std::enable_shared_from_this<Observer>
@@ -28,26 +29,14 @@ public:
   virtual ~Observer(){};
 
 protected:
-  virtual void printOstream(std::ostream &out, BulkStorage &source, std::size_t id)
+  virtual void printOstream(std::ostream &out, const std::vector<std::string> &vecStr)
   {
-    if (source.get_commands(id).size())
-    {
-      out << "bulk: ";
-      for (const auto &cmd : source.get_commands(id))
-        out << cmd << (&cmd != &source.get_commands(id).back() ? ", " : "");
-      out << std::endl;
-    }
-  }
-
-  virtual void printOstream1(std::ostream &out, std::vector<std::string> &vecStr)
-  {
-
     if (!vecStr.empty())
     {
       out << "bulk: ";
       for (const auto &cmd : vecStr)
         out << cmd << (&cmd != &vecStr.back() ? ", " : "");
-      out << "\n";
+      out << std::endl;
     }
   }
 };
@@ -61,6 +50,7 @@ private:
   std::queue<std::pair<std::size_t, std::vector<std::string>>> data_queue;
   std::vector<std::thread> console_threads;
   std::ostream &_out;
+  std::string thread_base_name{"log"};
 
 public:
   ToConsolePrint(std::ostream &out, std::size_t threads_count = 1) : Observer(), _out{out},
@@ -87,10 +77,13 @@ public:
     if (!threads_count)
       threads_count = 1;
     for (auto i = 0; i < threads_count; ++i)
-      console_threads.emplace_back(std::thread(&ToConsolePrint::printOut, this));
-
+    {
+      std::thread createdThread = std::thread(&ToConsolePrint::printOut, this);
+      MetricsCount::Instance().regThread(createdThread.get_id(), thread_base_name);
+      console_threads.emplace_back(std::move(createdThread));
+    }
 #ifdef DEBUG
-    std::cout << "Console_log thread created" << console_threads.size() << "\n";
+    std::cout << "Console_log thread created" << console_threads.size() << std::endl;
 #endif
   }
 
@@ -107,13 +100,13 @@ public:
         thread.join();
 
 #ifdef DEBUG
-    std::cout << "Console_log threads stopped\n";
+    std::cout << "Console_log threads stopped" << std::endl;
 #endif
-    //console_threads.clear();
+    console_threads.clear();
   }
   void printOut();
 
-    virtual ~ToConsolePrint()
+  virtual ~ToConsolePrint()
   {
     stop();
   }
@@ -127,6 +120,7 @@ private:
   std::atomic<bool> finished;
   std::queue<std::pair<std::size_t, std::vector<std::string>>> data_queue;
   std::vector<std::thread> file_threads;
+  std::string thread_base_name{"file"};
 
 public:
   ToFilePrint(std::size_t threads_count = 1) : Observer() { start(threads_count); }
@@ -154,7 +148,11 @@ public:
     if (!threads_count)
       threads_count = 1;
     for (auto i = 0; i < threads_count; ++i)
-      file_threads.emplace_back(std::thread(&ToFilePrint::printOut, this));
+    {
+      std::thread createdThread = std::thread(&ToFilePrint::printOut, this);
+      MetricsCount::Instance().regThread(createdThread.get_id(), thread_base_name + std::to_string(i + 1));
+      file_threads.emplace_back(std::move(createdThread));
+    }
 
 #ifdef DEBUG
     std::cout << "File_log thread created" << file_threads.size() << std::endl;
@@ -163,6 +161,12 @@ public:
 
   void stop()
   {
+    finished = true;
+    cv_queue.notify_all();
+    if (file_threads.empty())
+    {
+      return;
+    }
     for (auto &thread : file_threads)
       if (thread.joinable())
         thread.join();
@@ -171,9 +175,7 @@ public:
 #endif
     file_threads.clear();
   }
-  void printOut()
-  {
-  }
+  void printOut();
 
   virtual ~ToFilePrint()
   {

@@ -2,7 +2,12 @@
 #include "bulk.cpp"
 #include "bulk_storage.cpp"
 #include "bulk_observer.cpp"
+#include "metrics.cpp"
 #include <sstream>
+#include <iostream>
+#include <chrono>
+#include <thread>
+
 using namespace testing;
 class TestCommandsCollection : public Test
 {
@@ -11,13 +16,14 @@ class TestCommandsCollection : public Test
     std::size_t chunk_size{3};
     std::shared_ptr<BulkReadCmd> ptrBulkRead;
     std::shared_ptr<ToConsolePrint> ptrToConsolePrint;
-  
+    std::shared_ptr<ToFilePrint> ptrToFilePrint;
     void SetUp() override
     {
         ptrBulkRead = BulkReadCmd::create(chunk_size);
-        ptrToConsolePrint = ToConsolePrint::create(oss, ptrBulkRead);
-       // ptrBulkRead->subscribe(ptrToConsolePrint);
 
+        ptrToConsolePrint = ToConsolePrint::create(oss, ptrBulkRead);
+        //  ptrToFilePrint = ToFilePrint::create(ptrBulkRead, 2);
+        // ptrBulkRead->subscribe(ptrToConsolePrint);
     }
 };
 
@@ -43,11 +49,12 @@ TEST_F(TestCommandsCollection, Test_Observer_Storage)
     ptrToConsolePrint->subscribe_on_observable(ptrBulkRead);
     ASSERT_TRUE(ptrToConsolePrint.use_count() == 1);
     ptrToConsolePrint->unsubscribe_on_observable(ptrBulkRead);
-     ptrToConsolePrint->unsubscribe_on_observable(ptrBulkRead);
+    ptrToConsolePrint->unsubscribe_on_observable(ptrBulkRead);
 }
 
 TEST_F(TestCommandsCollection, Test_Bulk_Append1)
 {
+
     std::string testData{"cmd1\n"
                          "cmd2\n"
                          "cmd3\n"
@@ -62,6 +69,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append1)
 
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -82,6 +90,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append2)
 
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -102,6 +111,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append3)
 
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -129,6 +139,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append4)
 
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -148,6 +159,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append5)
         "bulk: cmd3, cmd4, , cmd6\n"};
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -168,6 +180,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append6)
         "bulk: cmd6\n"};
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -188,6 +201,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append7)
         "bulk: cmd1, cmd2, cmd3, cmd4, , cmd6\n"};
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -206,6 +220,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append8)
         "bulk: cmd1, cmd2, cmd3\n"};
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -226,6 +241,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append9)
         "bulk: cmd6\n"};
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -246,6 +262,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append10)
         "bulk: cmd1, cmd2, cmd3\n"};
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -262,6 +279,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append11)
         "bulk: cmd4, \n"};
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }
@@ -273,6 +291,7 @@ TEST_F(TestCommandsCollection, Test_Bulk_Append12)
     std::string resultData{};
     std::istringstream iss(testData);
     ptrBulkRead->process(iss);
+    ptrToConsolePrint->stop();
     std::cout << oss.str() << std::endl;
     ASSERT_THAT(oss.str(), resultData);
 }

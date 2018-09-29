@@ -4,12 +4,15 @@
 #include <algorithm>
 #include <memory>
 #include <cstddef>
+#include <mutex>
 #include "utils.h"
 #include "bulk_storage.h"
 #include "bulk_observer.h"
 class Observer;
 class Observable
 {
+  std::mutex lock_mutex;
+
 public:
   void subscribe(const std::weak_ptr<Observer> &observer_ptr)
   {
@@ -40,6 +43,7 @@ public:
 protected:
   void notify(BulkStorage &source, std::size_t id)
   {
+    // std::lock_guard<std::mutex> m_lock(lock_mutex);
     for (const auto &obs : observers)
     {
       if (auto ptr = obs.lock())
@@ -48,6 +52,9 @@ protected:
         ptr.reset();
       }
     }
+    MetricsCount::Instance().blocksIncr(std::this_thread::get_id());
+    MetricsCount::Instance().cmdsIncr(std::this_thread::get_id(),
+                                      source.get_commands(id).size());
   }
 
 private:

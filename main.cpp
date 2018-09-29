@@ -2,9 +2,11 @@
 #include <cstddef>
 #include <memory>
 #include <exception>
+#include <thread>
 #include "bulk.h"
 #include "bulk_observer.h"
 #include "utils.h"
+#include "metrics.h"
 
 int main(int argc, char const *argv[])
 {
@@ -25,13 +27,14 @@ int main(int argc, char const *argv[])
 
         std::size_t chunk_size = std::atoi(argv[1]);
         std::size_t file_threads_count = 2;
+        MetricsCount::Instance().regThread(std::this_thread::get_id(), mainThreadName);
         auto ptrBulkRead = BulkReadCmd::create(chunk_size);
-        auto ptrToConsolePrint = ToConsolePrint::create(std::cout, ptrBulkRead);
-        auto ptrToFilePrint = ToFilePrint::create(ptrBulkRead, file_threads_count);
-       
-        ptrBulkRead->process(std::cin);
-        std::cout<<"programm finished\n";
-       
+        {
+            auto ptrToConsolePrint = ToConsolePrint::create(std::cout, ptrBulkRead);
+            auto ptrToFilePrint = ToFilePrint::create(ptrBulkRead, file_threads_count);
+            ptrBulkRead->process(std::cin);
+        }
+        MetricsCount::Instance().printStatistic();
     }
     catch (std::exception &e)
     {

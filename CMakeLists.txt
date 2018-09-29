@@ -8,7 +8,8 @@ endif()
 set(MY_PROJECT_NAME bulkmt)
 project(${MY_PROJECT_NAME})
 find_package(Threads REQUIRED)
-add_executable(${MY_PROJECT_NAME} main.cpp bulk.cpp bulk_storage.cpp  bulk_observer.cpp)
+add_executable(${MY_PROJECT_NAME} main.cpp bulk.cpp bulk_storage.cpp 
+bulk_observer.cpp metrics.cpp)
 
 set_target_properties(${MY_PROJECT_NAME}  PROPERTIES
         CXX_STANDARD 17
