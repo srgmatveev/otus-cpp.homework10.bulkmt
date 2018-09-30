@@ -26,6 +26,9 @@ public:
   virtual void update(BulkStorage &source, std::size_t) = 0;
   void subscribe_on_observable(const std::weak_ptr<Observable> &);
   void unsubscribe_on_observable(const std::weak_ptr<Observable> &);
+  virtual void start(std::size_t) = 0;
+  virtual void stop() = 0;
+  virtual void printOut() = 0;
   virtual ~Observer(){};
 
 protected:
@@ -72,7 +75,7 @@ public:
     return std::make_shared<ToConsolePrint>(out, threads_count);
   }
 
-  void start(std::size_t threads_count = 1)
+  void start(std::size_t threads_count = 1) override
   {
     if (!threads_count)
       threads_count = 1;
@@ -87,7 +90,7 @@ public:
 #endif
   }
 
-  void stop()
+  void stop() override
   {
     finished = true;
     cv_queue.notify_all();
@@ -104,7 +107,7 @@ public:
 #endif
     console_threads.clear();
   }
-  void printOut();
+  void printOut() override;
 
   virtual ~ToConsolePrint()
   {
@@ -143,7 +146,7 @@ public:
     return _tmpToFilePrint;
   }
 
-  void start(std::size_t threads_count = 1)
+  void start(std::size_t threads_count = 1) override
   {
     if (!threads_count)
       threads_count = 1;
@@ -159,7 +162,7 @@ public:
 #endif
   }
 
-  void stop()
+  void stop() override
   {
     finished = true;
     cv_queue.notify_all();
