@@ -7,8 +7,8 @@ before_install:
 - sudo apt-get install gcc-8 g++-8 -y
 - sudo apt-get install cmake -y
 - sudo apt-get install git -y
-- sudo apt-get install doxygen -y
-- sudo apt-get install graphviz -y
+#- sudo apt-get install doxygen -y
+#- sudo apt-get install graphviz -y
 - sudo apt-get install libpthread-stubs0-dev -y
 install:
 - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 999 --slave /usr/bin/g++ g++ /usr/bin/g++-8
@@ -19,25 +19,25 @@ script:
 # Make check versions of gcc, g++ and cmake
 - gcc -v && g++ -v && cmake --version
 
-- "MYHOME=`pwd`"
-- sudo mkdir /usr/src/googletest
-- sudo git clone "https://github.com/google/googletest.git" /usr/src/googletest
+#- "MYHOME=`pwd`"
+#- sudo mkdir /usr/src/googletest
+#- sudo git clone "https://github.com/google/googletest.git" /usr/src/googletest
 
-- cd /usr/src/googletest/googletest
-- sudo cmake CMakeLists.txt
-- sudo make
-- sudo cp *.a /usr/lib
-- sudo mkdir -p /usr/include/gtest
-- sudo cp  -rp  /usr/src/googletest/googletest/include/* /usr/include/
+#- cd /usr/src/googletest/googletest
+#- sudo cmake CMakeLists.txt
+#- sudo make
+#- sudo cp *.a /usr/lib
+#- sudo mkdir -p /usr/include/gtest
+#- sudo cp  -rp  /usr/src/googletest/googletest/include/* /usr/include/
 
-- cd /usr/src/googletest/googlemock
-- sudo cmake CMakeLists.txt
-- sudo make
-- sudo cp *.a /usr/lib
-- sudo mkdir -p /usr/include/gmock
-- sudo cp  -rp  /usr/src/googletest/googlemock/include/* /usr/include/
+#- cd /usr/src/googletest/googlemock
+#- sudo cmake CMakeLists.txt
+#- sudo make
+#- sudo cp *.a /usr/lib
+#- sudo mkdir -p /usr/include/gmock
+#- sudo cp  -rp  /usr/src/googletest/googlemock/include/* /usr/include/
 
-- cd "${MYHOME}"
+#- cd "${MYHOME}"
 - cmake .
 - cmake --build .
 #- cmake --build . --target test
