@@ -44,21 +44,51 @@ protected:
   }
 };
 
-class ToConsolePrint : public Observer
+class ToPrint : public Observer
 {
 private:
+  std::mutex print_mutex;
+  std::vector<std::thread> print_threads;
+  std::ostream &_out{std::cout};
   std::condition_variable cv_queue;
-  std::mutex console_mutex;
   std::atomic<bool> finished{false};
+  std::string _thread_base_name{"log"};
   std::queue<std::pair<std::size_t, std::vector<std::string>>> data_queue;
-  std::vector<std::thread> console_threads;
-  std::ostream &_out;
-  std::string thread_base_name{"log"};
+  bool isConsole;
 
 public:
-  ToConsolePrint(std::ostream &out, std::size_t threads_count = 1) : Observer(), _out{out},
-                                                                     finished{false} { start(threads_count); }
+  ToPrint(std::ostream &out, const std::string &thread_base_name,
+          std::size_t threads_count = 1) : _out{out}, finished{false}, _thread_base_name{thread_base_name},
+                                           isConsole{true}
+  {
+    start(threads_count);
+  }
+
+  ToPrint(const std::string &thread_base_name,
+          std::size_t threads_count = 1) : finished{false}, _thread_base_name{thread_base_name},
+                                           isConsole{false}
+  {
+    start(threads_count);
+  }
   void update(BulkStorage &, std::size_t) override;
+  void start(std::size_t) override;
+  void stop() override;
+  void printOut() override;
+  virtual ~ToPrint()
+  {
+    stop();
+  }
+};
+
+class ToConsolePrint : public ToPrint
+{
+private:
+  static const std::string thread_base_name;
+
+public:
+  ToConsolePrint(std::ostream &out, std::size_t threads_count = 1) : ToPrint(out, thread_base_name, threads_count)
+  {
+  }
   static std::shared_ptr<ToConsolePrint> create(std::ostream &out, const std::weak_ptr<Observable> &_obs, std::size_t threads_count = 1)
   {
     std::shared_ptr _tmpToConsolePrint = std::make_shared<ToConsolePrint>(out, threads_count);
@@ -74,60 +104,16 @@ public:
   {
     return std::make_shared<ToConsolePrint>(out, threads_count);
   }
-
-  void start(std::size_t threads_count = 1) override
-  {
-    if (!threads_count)
-      threads_count = 1;
-    for (auto i = 0; i < threads_count; ++i)
-    {
-      std::thread createdThread = std::thread(&ToConsolePrint::printOut, this);
-      MetricsCount::Instance().regThread(createdThread.get_id(), thread_base_name);
-      console_threads.emplace_back(std::move(createdThread));
-    }
-#ifdef DEBUG
-    std::cout << "Console_log thread created" << console_threads.size() << std::endl;
-#endif
-  }
-
-  void stop() override
-  {
-    finished = true;
-    cv_queue.notify_all();
-    if (console_threads.empty())
-    {
-      return;
-    }
-    for (auto &thread : console_threads)
-      if (thread.joinable())
-        thread.join();
-
-#ifdef DEBUG
-    std::cout << "Console_log threads stopped" << std::endl;
-#endif
-    console_threads.clear();
-  }
-  void printOut() override;
-
-  virtual ~ToConsolePrint()
-  {
-    stop();
-  }
+  virtual ~ToConsolePrint() {}
 };
 
-class ToFilePrint : public Observer
+class ToFilePrint : public ToPrint
 {
 private:
-  std::condition_variable cv_queue;
-  std::mutex file_mutex;
-  std::atomic<bool> finished;
-  std::queue<std::pair<std::size_t, std::vector<std::string>>> data_queue;
-  std::vector<std::thread> file_threads;
-  std::string thread_base_name{"file"};
+  static const std::string thread_base_name;
 
 public:
-  ToFilePrint(std::size_t threads_count = 1) : Observer() { start(threads_count); }
-  void update(BulkStorage &, std::size_t) override;
+  ToFilePrint(std::size_t threads_count = 1) : ToPrint(thread_base_name, threads_count) {}
 
   static std::shared_ptr<ToFilePrint> create(std::size_t threads_count = 1)
   {
@@ -146,42 +132,7 @@ public:
     return _tmpToFilePrint;
   }
 
-  void start(std::size_t threads_count = 1) override
-  {
-    if (!threads_count)
-      threads_count = 1;
-    for (auto i = 0; i < threads_count; ++i)
-    {
-      std::thread createdThread = std::thread(&ToFilePrint::printOut, this);
-      MetricsCount::Instance().regThread(createdThread.get_id(), thread_base_name + std::to_string(i + 1));
-      file_threads.emplace_back(std::move(createdThread));
-    }
-
-#ifdef DEBUG
-    std::cout << "File_log thread created" << file_threads.size() << std::endl;
-#endif
-  }
-
-  void stop() override
-  {
-    finished = true;
-    cv_queue.notify_all();
-    if (file_threads.empty())
-    {
-      return;
-    }
-    for (auto &thread : file_threads)
-      if (thread.joinable())
-        thread.join();
-#ifdef DEBUG
-    std::cout << "File_log threads stopped" << file_threads.size() << std::endl;
-#endif
-    file_threads.clear();
-  }
-  void printOut();
-
   virtual ~ToFilePrint()
   {
-    stop();
   }
 };
