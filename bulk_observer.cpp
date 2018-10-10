@@ -23,7 +23,7 @@ void ToPrint::start(std::size_t threads_count = 1)
 
     if (threads_count == 1)
     {
-        std::thread createdThread = std::thread(&ToPrint::printOut, this);
+        auto createdThread = std::thread(&ToPrint::printOut, this);
         MetricsCount::Instance().regThread(createdThread.get_id(), _thread_base_name);
         print_threads.emplace_back(std::move(createdThread));
     }
@@ -31,7 +31,7 @@ void ToPrint::start(std::size_t threads_count = 1)
     {
         for (auto i = 0; i < threads_count; ++i)
         {
-            std::thread createdThread = std::thread(&ToPrint::printOut, this);
+            auto createdThread = std::thread(&ToPrint::printOut, this);
             MetricsCount::Instance().regThread(createdThread.get_id(), _thread_base_name + std::to_string(i + 1));
             print_threads.emplace_back(std::move(createdThread));
         }

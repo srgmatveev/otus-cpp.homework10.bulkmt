@@ -53,7 +53,8 @@ private:
   std::condition_variable cv_queue;
   std::atomic<bool> finished{false};
   std::string _thread_base_name{"log"};
-  std::queue<std::pair<std::size_t, std::vector<std::string>>> data_queue;
+  using pair_type = std::pair<std::size_t, std::vector<std::string>>;
+  std::queue<pair_type> data_queue;
   bool isConsole;
 
 public:
@@ -89,9 +90,9 @@ public:
   ToConsolePrint(std::ostream &out, std::size_t threads_count = 1) : ToPrint(out, thread_base_name, threads_count)
   {
   }
-  static std::shared_ptr<ToConsolePrint> create(std::ostream &out, const std::weak_ptr<Observable> &_obs, std::size_t threads_count = 1)
+  static auto create(std::ostream &out, const std::weak_ptr<Observable> &_obs, std::size_t threads_count = 1)
   {
-    std::shared_ptr _tmpToConsolePrint = std::make_shared<ToConsolePrint>(out, threads_count);
+    auto _tmpToConsolePrint = std::make_shared<ToConsolePrint>(out, threads_count);
     auto tmpObservable = _obs.lock();
     if (tmpObservable)
     {
@@ -100,7 +101,7 @@ public:
     }
     return _tmpToConsolePrint;
   }
-  static std::shared_ptr<ToConsolePrint> create(std::ostream &out, std::size_t threads_count = 1)
+  static auto create(std::ostream &out, std::size_t threads_count = 1)
   {
     return std::make_shared<ToConsolePrint>(out, threads_count);
   }
@@ -115,14 +116,14 @@ private:
 public:
   ToFilePrint(std::size_t threads_count = 1) : ToPrint(thread_base_name, threads_count) {}
 
-  static std::shared_ptr<ToFilePrint> create(std::size_t threads_count = 1)
+  static auto create(std::size_t threads_count = 1)
   {
     return std::make_shared<ToFilePrint>(threads_count);
   }
 
-  static std::shared_ptr<ToFilePrint> create(const std::weak_ptr<Observable> &_observable, std::size_t threads_count = 1)
+  static auto create(const std::weak_ptr<Observable> &_observable, std::size_t threads_count = 1)
   {
-    std::shared_ptr _tmpToFilePrint = std::make_shared<ToFilePrint>(threads_count);
+    auto _tmpToFilePrint = std::make_shared<ToFilePrint>(threads_count);
     auto tmpObservable = _observable.lock();
     if (tmpObservable)
     {
