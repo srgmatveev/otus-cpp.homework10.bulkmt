@@ -27,6 +27,7 @@ class MetricsCount
     void regThread(std::thread::id, const std::string &);
     void cmdsIncr(std::thread::id, std::size_t);
     void blocksIncr(std::thread::id);
+    void blocksCmdsIncr(std::thread::id id, std::size_t count);
     void stringsIncr(std::thread::id);
     void printStatistic();
   private:

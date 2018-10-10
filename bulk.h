@@ -52,9 +52,7 @@ protected:
         ptr.reset();
       }
     }
-    MetricsCount::Instance().blocksIncr(std::this_thread::get_id());
-    MetricsCount::Instance().cmdsIncr(std::this_thread::get_id(),
-                                      source.get_commands(id).size());
+    MetricsCount::Instance().blocksCmdsIncr(std::this_thread::get_id(), source.get_commands(id).size());
   }
 
 private:

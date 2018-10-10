@@ -13,45 +13,58 @@ void MetricsCount::regThread(std::thread::id id, const std::string &str)
     }
 }
 
-void MetricsCount::cmdsIncr(std::thread::id id, std::size_t count){
-     auto iter = metrics.find(id);
+void MetricsCount::cmdsIncr(std::thread::id id, std::size_t count)
+{
+    auto iter = metrics.find(id);
     if (iter != metrics.cend())
     {
-        iter->second->cmd_cnt+=count;
+        iter->second->cmd_cnt += count;
     }
 }
 
-void MetricsCount::blocksIncr(std::thread::id id){
-     auto iter = metrics.find(id);
+void MetricsCount::blocksIncr(std::thread::id id)
+{
+    auto iter = metrics.find(id);
     if (iter != metrics.cend())
     {
         ++(iter->second->blk_cnt);
     }
 }
 
-void MetricsCount::stringsIncr(std::thread::id id){
-     auto iter = metrics.find(id);
+void MetricsCount::blocksCmdsIncr(std::thread::id id, std::size_t count)
+{
+    blocksIncr(id);
+    cmdsIncr(id, count);
+}
+
+void MetricsCount::stringsIncr(std::thread::id id)
+{
+    auto iter = metrics.find(id);
     if (iter != metrics.cend())
     {
         ++(iter->second->str_cnt);
     }
 }
 
-void MetricsCount::printStatistic(){
+void MetricsCount::printStatistic()
+{
 
-    for(const auto& item : metrics ){
-        if(item.second->thread_name == mainThreadName){
+    for (const auto &item : metrics)
+    {
+        if (item.second->thread_name == mainThreadName)
+        {
             std::cout << item.second->thread_name
                       << ": lines: " << item.second->str_cnt
                       << ", blocks: " << item.second->blk_cnt
                       << ", cmds: " << item.second->cmd_cnt
                       << std::endl;
-        } else {
-             std::cout << item.second->thread_name
+        }
+        else
+        {
+            std::cout << item.second->thread_name
                       << ": blocks: " << item.second->blk_cnt
                       << ", cmds: " << item.second->cmd_cnt
                       << std::endl;
         }
-
     }
 }

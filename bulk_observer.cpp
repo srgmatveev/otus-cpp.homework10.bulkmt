@@ -73,8 +73,7 @@ void ToPrint::printOut()
             data_queue.pop();
             if (isConsole)
             {
-                MetricsCount::Instance().blocksIncr(std::this_thread::get_id());
-                MetricsCount::Instance().cmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
+                MetricsCount::Instance().blocksCmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
                 printOstream(_out, cmd_pair.second);
             }
             else
@@ -90,8 +89,7 @@ void ToPrint::printOut()
                 {
                     ofs.open(fName, std::ofstream::out | std::ofstream::trunc);
                     locker.unlock();
-                    MetricsCount::Instance().blocksIncr(std::this_thread::get_id());
-                    MetricsCount::Instance().cmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
+                    MetricsCount::Instance().blocksCmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
                     printOstream(ofs, cmd_pair.second);
                     ofs.close();
                 }
