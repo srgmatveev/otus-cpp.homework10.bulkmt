@@ -73,7 +73,7 @@ void ToPrint::printOut()
             data_queue.pop();
             if (isConsole)
             {
-                MetricsCount::Instance().blocksCmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
+                blocksCmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
                 printOstream(_out, cmd_pair.second);
             }
             else
@@ -89,11 +89,11 @@ void ToPrint::printOut()
                 {
                     ofs.open(fName, std::ofstream::out | std::ofstream::trunc);
                     locker.unlock();
-                    MetricsCount::Instance().blocksCmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
+                    blocksCmdsIncr(std::this_thread::get_id(), cmd_pair.second.size());
                     printOstream(ofs, cmd_pair.second);
                     ofs.close();
                 }
-                catch (std::ofstream::failure e)
+                catch (std::ofstream::failure &e)
                 {
                     locker.unlock();
                     std::cerr << "Exception opening/reading/closing file: " << fName << std::endl;

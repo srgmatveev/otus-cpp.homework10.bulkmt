@@ -31,12 +31,6 @@ void MetricsCount::blocksIncr(std::thread::id id)
     }
 }
 
-void MetricsCount::blocksCmdsIncr(std::thread::id id, std::size_t count)
-{
-    blocksIncr(id);
-    cmdsIncr(id, count);
-}
-
 void MetricsCount::stringsIncr(std::thread::id id)
 {
     auto iter = metrics.find(id);
@@ -67,4 +61,10 @@ void MetricsCount::printStatistic()
                       << std::endl;
         }
     }
+}
+
+void blocksCmdsIncr(std::thread::id id, std::size_t count)
+{
+    MetricsCount::Instance().blocksIncr(id);
+    MetricsCount::Instance().cmdsIncr(id, count);
 }
