@@ -9,7 +9,8 @@ void MetricsCount::regThread(std::thread::id id, const std::string &str)
         auto metricPtr = std::make_shared<Metric>();
         metricPtr->thread_id = id;
         metricPtr->thread_name = str;
-        metrics.insert(std::pair{id, metricPtr});
+        using type_pair = std::pair<std::thread::id, std::shared_ptr<Metric>>;
+        metrics.insert(type_pair{id, metricPtr});
     }
 }
 

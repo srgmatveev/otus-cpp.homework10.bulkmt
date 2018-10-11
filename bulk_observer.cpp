@@ -13,7 +13,7 @@ const std::string ToFilePrint::thread_base_name = "file";
 void ToPrint::update(BulkStorage &source, std::size_t id)
 {
     std::unique_lock<std::mutex> lock{print_mutex};
-    data_queue.emplace(std::pair{source.get_timestamp(id), source.get_commands(id)});
+    data_queue.emplace(pair_type{source.get_timestamp(id), source.get_commands(id)});
     cv_queue.notify_one();
 }
 void ToPrint::start(std::size_t threads_count = 1)
@@ -29,7 +29,7 @@ void ToPrint::start(std::size_t threads_count = 1)
     }
     else
     {
-        for (auto i = 0; i < threads_count; ++i)
+        for (std::size_t i = 0; i < threads_count; ++i)
         {
             auto createdThread = std::thread(&ToPrint::printOut, this);
             MetricsCount::Instance().regThread(createdThread.get_id(), _thread_base_name + std::to_string(i + 1));
